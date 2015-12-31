@@ -44,6 +44,9 @@
             this.tbDiag = new System.Windows.Forms.TextBox();
             this.laDiag = new System.Windows.Forms.Label();
             this.buDemo = new System.Windows.Forms.Button();
+            this.bwLineFollower = new System.ComponentModel.BackgroundWorker();
+            this.buLineFollow = new System.Windows.Forms.Button();
+            this.buStop = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cbPorts
@@ -153,6 +156,7 @@
             this.tbDiag.Name = "tbDiag";
             this.tbDiag.Size = new System.Drawing.Size(260, 114);
             this.tbDiag.TabIndex = 11;
+            this.tbDiag.TextChanged += new System.EventHandler(this.tbDiag_TextChanged);
             // 
             // laDiag
             // 
@@ -173,11 +177,41 @@
             this.buDemo.UseVisualStyleBackColor = true;
             this.buDemo.Click += new System.EventHandler(this.buDemo_Click);
             // 
+            // bwLineFollower
+            // 
+            this.bwLineFollower.WorkerReportsProgress = true;
+            this.bwLineFollower.WorkerSupportsCancellation = true;
+            this.bwLineFollower.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bwLineFollower_DoWork);
+            this.bwLineFollower.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.bwLineFollower_ProgressChanged);
+            this.bwLineFollower.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bwLineFollower_RunWorkerCompleted);
+            // 
+            // buLineFollow
+            // 
+            this.buLineFollow.Location = new System.Drawing.Point(15, 178);
+            this.buLineFollow.Name = "buLineFollow";
+            this.buLineFollow.Size = new System.Drawing.Size(75, 23);
+            this.buLineFollow.TabIndex = 14;
+            this.buLineFollow.Text = "Line Follow";
+            this.buLineFollow.UseVisualStyleBackColor = true;
+            this.buLineFollow.Click += new System.EventHandler(this.buLineFollow_Click);
+            // 
+            // buStop
+            // 
+            this.buStop.Location = new System.Drawing.Point(475, 178);
+            this.buStop.Name = "buStop";
+            this.buStop.Size = new System.Drawing.Size(75, 23);
+            this.buStop.TabIndex = 15;
+            this.buStop.Text = "Stop";
+            this.buStop.UseVisualStyleBackColor = true;
+            this.buStop.Click += new System.EventHandler(this.buStop_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(573, 408);
+            this.Controls.Add(this.buStop);
+            this.Controls.Add(this.buLineFollow);
             this.Controls.Add(this.buDemo);
             this.Controls.Add(this.laDiag);
             this.Controls.Add(this.tbDiag);
@@ -217,6 +251,9 @@
         private System.Windows.Forms.TextBox tbDiag;
         private System.Windows.Forms.Label laDiag;
         private System.Windows.Forms.Button buDemo;
+        private System.ComponentModel.BackgroundWorker bwLineFollower;
+        private System.Windows.Forms.Button buLineFollow;
+        private System.Windows.Forms.Button buStop;
     }
 }
 

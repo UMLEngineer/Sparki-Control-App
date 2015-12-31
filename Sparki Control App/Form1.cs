@@ -8,13 +8,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
+using System.Threading;
 
 
 namespace Sparki_Control_App
 {
     public partial class Form1 : Form
     {
-        
+
+        int lineLeft = 0;
         public Form1()
         {
             InitializeComponent();
@@ -33,7 +35,20 @@ namespace Sparki_Control_App
 
         }
 
-        private void buOpen_Click(object sender, EventArgs e)
+        String readBluetooth()
+        {
+            try
+            {
+                return serialPort1.ReadLine();
+            }
+            catch (TimeoutException)
+            {
+                return "Timeout Exception";
+            }
+        }
+
+
+    private void buOpen_Click(object sender, EventArgs e)
         {
             try
             {
@@ -66,7 +81,6 @@ namespace Sparki_Control_App
             buClose.Enabled = false;
             buPing.Enabled = false;
         }
-        string commandOut;
 
         int checkSumF(char[] arr)
         {
@@ -84,7 +98,6 @@ namespace Sparki_Control_App
             commOut += checkSumV;
             commOut += 'z';
             serialPort1.Write(commOut);
-            tbDiag.Text = "Data Sent: " + commOut;
         }
 
         private void buPing_Click(object sender, EventArgs e)
@@ -97,13 +110,93 @@ namespace Sparki_Control_App
             }
             catch (TimeoutException)
             {
-                tbDiag.Text = "Timeout Excetion";
+                tbDiag.Text = "TE";
             }
         }
 
          private void buDemo_Click(object sender, EventArgs e)
         {
             commandCreater("090lef");
+            System.Threading.Thread.Sleep(5000);
+            commandCreater("090rig");
+            bwLineFollower.ReportProgress(lineLeft);
+        }
+
+        private void bwLineFollower_DoWork(object sender, DoWorkEventArgs e)
+        {
+
+           
+            String returned;
+            char[] returnedc;
+
+            if ((bwLineFollower.CancellationPending == true))
+            {
+                e.Cancel = true;
+                return;
+            }
+            else
+            {
+                commandCreater("000bll");
+                returned = readBluetooth();
+                if(returned == "TE")
+                    System.Threading.Thread.Sleep(5000);  //Needs to throw and error
+                else  //This should report to the tb.Diag the value from the sensor. 
+                {
+                    int x = 100;
+                    returnedc = returned.ToCharArray();
+                    for (int i = 0; i < 3; i++)
+                    {
+                        lineLeft += x * (returnedc[i] - '0');
+                        x /= 10;
+                    }
+                    bwLineFollower.ReportProgress(1);  //report the value back out
+                }
+
+            }
+        }
+
+        private void bwLineFollower_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+                tbDiag.Text = "Line Left = " + lineLeft;
+        }
+
+        private void bwLineFollower_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if ((e.Cancelled == true))
+            {
+                
+            }
+
+            else if (!(e.Error == null))
+            {
+                
+            }
+
+            else
+            {
+                
+            }
+        }
+
+        private void buLineFollow_Click(object sender, EventArgs e)
+        {
+            if (bwLineFollower.IsBusy != true)
+            {
+                bwLineFollower.RunWorkerAsync();
+            }
+        }
+
+        private void buStop_Click(object sender, EventArgs e)
+        {
+            if (bwLineFollower.WorkerSupportsCancellation == true)
+            {
+                bwLineFollower.CancelAsync();
+            }
+        }
+
+        private void tbDiag_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
-    }
+}
