@@ -16,7 +16,6 @@ namespace Sparki_Control_App
     public partial class Form1 : Form
     {
 
-        int lineLeft = 0;
         public Form1()
         {
             InitializeComponent();
@@ -28,14 +27,18 @@ namespace Sparki_Control_App
 
         }
 
-        void getAvailablePorts()
+        //global variables  
+        
+        //Functions
+
+        void getAvailablePorts()  //poplate ports combo box
         {
             String[] ports = SerialPort.GetPortNames();
             cbPorts.Items.AddRange(ports);
 
         }
 
-        String readBluetooth()
+        String readBluetooth()  //read the data coming back from sparki as a line consider going to a character by character approach
         {
             try
             {
@@ -47,8 +50,67 @@ namespace Sparki_Control_App
             }
         }
 
+        int checkSumF(char[] arr)
+        {
+            int sum = 0;
+            for (int i = 0; i < 5; i++)
+                sum += arr[i];
+            return sum;
+        }
 
-    private void buOpen_Click(object sender, EventArgs e)
+        void commandCreater(String commOut)
+        {
+            char[] commandArray = new char[9];
+            commandArray = commOut.ToCharArray();
+            int checkSumV = checkSumF(commandArray);
+            commOut += checkSumV;
+            commOut += 'z';
+            serialPort1.Write(commOut);
+        }
+
+        void printDiag(String text, int data)
+        {
+            this.tbDiag.Text = text + data;
+
+        }
+
+        int charToInt(int multiplier, String returned)
+        {
+            int x = 100;
+            int converted = 0;
+            char[] returnedc = returned.ToCharArray();
+            for (int i = 0; i < 3; i++)
+            {
+                converted += x * (returnedc[i] - '0');
+                x /= 10;
+            }
+            return converted;
+        }
+
+        //GUI elements
+
+        private void buLineFollow_Click(object sender, EventArgs e)
+        {
+            if (bwLineFollower.IsBusy != true)
+            {
+                bwLineFollower.RunWorkerAsync();
+            }
+        }
+
+        private void buStop_Click(object sender, EventArgs e)
+        {
+            if (bwLineFollower.WorkerSupportsCancellation == true)
+            {
+                bwLineFollower.CancelAsync();
+            }
+        }
+
+        private void tbDiag_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buOpen_Click(object sender, EventArgs e)
         {
             try
             {
@@ -82,24 +144,6 @@ namespace Sparki_Control_App
             buPing.Enabled = false;
         }
 
-        int checkSumF(char[] arr)
-        {
-            int sum = 0;
-            for (int i=0; i < 5; i++)
-                sum += arr[i];
-            return sum;
-        }
-
-        void commandCreater(String commOut)
-        {
-            char[] commandArray = new char[9];
-            commandArray = commOut.ToCharArray();
-            int checkSumV = checkSumF(commandArray);
-            commOut += checkSumV;
-            commOut += 'z';
-            serialPort1.Write(commOut);
-        }
-
         private void buPing_Click(object sender, EventArgs e)
         {
             commandCreater("000pin");
@@ -116,16 +160,19 @@ namespace Sparki_Control_App
 
          private void buDemo_Click(object sender, EventArgs e)
         {
+           
             commandCreater("090lef");
             System.Threading.Thread.Sleep(5000);
             commandCreater("090rig");
-            bwLineFollower.ReportProgress(lineLeft);
         }
 
+        //Background Worker for the Line Following system
         private void bwLineFollower_DoWork(object sender, DoWorkEventArgs e)
         {
 
-           
+            int lineLeft = 0;
+            int lineRight = 0;
+            int lineCenter = 0;
             String returned;
             char[] returnedc;
 
@@ -139,17 +186,29 @@ namespace Sparki_Control_App
                 commandCreater("000bll");
                 returned = readBluetooth();
                 if(returned == "TE")
-                    System.Threading.Thread.Sleep(5000);  //Needs to throw and error
-                else  //This should report to the tb.Diag the value from the sensor. 
+                    this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
+                else
                 {
-                    int x = 100;
-                    returnedc = returned.ToCharArray();
-                    for (int i = 0; i < 3; i++)
-                    {
-                        lineLeft += x * (returnedc[i] - '0');
-                        x /= 10;
-                    }
-                    bwLineFollower.ReportProgress(1);  //report the value back out
+                    lineLeft = charToInt(100, returned);
+                    this.Invoke(new Action<string, int>(printDiag), "Line Left:  ", lineLeft);
+                }
+                commandCreater("000blr");
+                returned = readBluetooth();
+                if (returned == "TE")
+                    this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
+                else
+                {
+                    lineRight = charToInt(100, returned);
+                    this.Invoke(new Action<string, int>(printDiag), "Line Right:  ", lineRight);
+                }
+                commandCreater("000blc");
+                returned = readBluetooth();
+                if (returned == "TE")
+                    this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
+                else
+                {
+                    lineCenter = charToInt(100, returned);
+                    this.Invoke(new Action<string, int>(printDiag), "Line Center:  ", lineCenter);
                 }
 
             }
@@ -157,7 +216,7 @@ namespace Sparki_Control_App
 
         private void bwLineFollower_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-                tbDiag.Text = "Line Left = " + lineLeft;
+
         }
 
         private void bwLineFollower_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -176,27 +235,6 @@ namespace Sparki_Control_App
             {
                 
             }
-        }
-
-        private void buLineFollow_Click(object sender, EventArgs e)
-        {
-            if (bwLineFollower.IsBusy != true)
-            {
-                bwLineFollower.RunWorkerAsync();
-            }
-        }
-
-        private void buStop_Click(object sender, EventArgs e)
-        {
-            if (bwLineFollower.WorkerSupportsCancellation == true)
-            {
-                bwLineFollower.CancelAsync();
-            }
-        }
-
-        private void tbDiag_TextChanged(object sender, EventArgs e)
-        {
-
         }
     }
 }
