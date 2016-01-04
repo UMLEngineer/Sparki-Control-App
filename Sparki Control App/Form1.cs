@@ -11,6 +11,7 @@ using System.IO.Ports;
 using System.Threading;
 
 
+//Need to make a log file system
 namespace Sparki_Control_App
 {
     public partial class Form1 : Form
@@ -173,8 +174,9 @@ namespace Sparki_Control_App
             int lineLeft = 0;
             int lineRight = 0;
             int lineCenter = 0;
-            String returned;
-            char[] returnedc;
+            int threshold = 500;  //below this value means the sensor is on the line
+            String returned;  //value sent from sparki as a line of characters
+            char[] returnedc;  //character array of the returned string
 
             if ((bwLineFollower.CancellationPending == true))
             {
@@ -183,16 +185,17 @@ namespace Sparki_Control_App
             }
             else
             {
-                commandCreater("000bll");
-                returned = readBluetooth();
-                if(returned == "TE")
+                commandCreater("000bll");  //ask Sparki for the left Line sensors data
+                returned = readBluetooth();  //read the returned value
+                if(returned == "TE")  //check for a transmission error
                     this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
-                else
+                else  //if no error convert the character array into an int and report the value for diag
                 {
                     lineLeft = charToInt(100, returned);
                     this.Invoke(new Action<string, int>(printDiag), "Line Left:  ", lineLeft);
                 }
-                commandCreater("000blr");
+
+                commandCreater("000blr");  //ask Sparki for the right Line sensors data
                 returned = readBluetooth();
                 if (returned == "TE")
                     this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
@@ -201,7 +204,8 @@ namespace Sparki_Control_App
                     lineRight = charToInt(100, returned);
                     this.Invoke(new Action<string, int>(printDiag), "Line Right:  ", lineRight);
                 }
-                commandCreater("000blc");
+
+                commandCreater("000blc");  //ask Sparki for the Center Line sensors data
                 returned = readBluetooth();
                 if (returned == "TE")
                     this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
@@ -211,6 +215,20 @@ namespace Sparki_Control_App
                     this.Invoke(new Action<string, int>(printDiag), "Line Center:  ", lineCenter);
                 }
 
+                //use the left, center and right data to make a decision about how to adjust to the line.
+                //need to calibrate, 001 may be to small a step, wht happens if the line is visible by both sensors?
+
+                if (lineRight < threshold)
+                    commandCreater("001lef");
+                else if (lineLeft < threshold)
+                    commandCreater("001rig");
+                else if (lineLeft > threshold && lineCenter < threshold && lineRight > threshold)
+                    commandCreater("001for");
+                else
+                {
+                    e.Cancel = true;
+                    return;
+                }
             }
         }
 
@@ -223,7 +241,7 @@ namespace Sparki_Control_App
         {
             if ((e.Cancelled == true))
             {
-                
+                this.Invoke(new Action<string, int>(printDiag), "No line detected", 0);
             }
 
             else if (!(e.Error == null))
