@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.cbPorts = new System.Windows.Forms.ComboBox();
             this.cbBaud = new System.Windows.Forms.ComboBox();
             this.pbStatus = new System.Windows.Forms.ProgressBar();
@@ -39,7 +38,6 @@
             this.tbDataReceived = new System.Windows.Forms.TextBox();
             this.buOpen = new System.Windows.Forms.Button();
             this.buClose = new System.Windows.Forms.Button();
-            this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
             this.laDataReceived = new System.Windows.Forms.Label();
             this.tbDiag = new System.Windows.Forms.TextBox();
             this.laDiag = new System.Windows.Forms.Label();
@@ -246,7 +244,6 @@
         private System.Windows.Forms.TextBox tbDataReceived;
         private System.Windows.Forms.Button buOpen;
         private System.Windows.Forms.Button buClose;
-        private System.IO.Ports.SerialPort serialPort1;
         private System.Windows.Forms.Label laDataReceived;
         private System.Windows.Forms.TextBox tbDiag;
         private System.Windows.Forms.Label laDiag;

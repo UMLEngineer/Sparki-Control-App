@@ -21,7 +21,7 @@ namespace Sparki_Control_App
         public Form1()
         {
             InitializeComponent();
-            getAvailablePorts();
+            cbPorts.Items.AddRange(serialPortc.getAvailablePorts());
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -32,32 +32,9 @@ namespace Sparki_Control_App
         //global variables  
 
         LogCreater logger = new LogCreater();
-
+        Serial serialPortc = new Serial();
+        
         //General Functions
-
-        void log(string fileName, string text, int number)
-        {
-            logger.logWriter(fileName, text, number);
-        }
-
-        void getAvailablePorts()  //poplate ports combo box
-        {
-            String[] ports = SerialPort.GetPortNames();
-            cbPorts.Items.AddRange(ports);
-
-        }
-
-        String readBluetooth()  //read the data coming back from sparki as a line consider going to a character by character approach
-        {
-            try
-            {
-                return serialPort1.ReadLine();
-            }
-            catch (TimeoutException)
-            {
-                return "Timeout Exception";
-            }
-        }
 
         int checkSumF(char[] arr)
         {
@@ -74,13 +51,12 @@ namespace Sparki_Control_App
             int checkSumV = checkSumF(commandArray);
             commOut += checkSumV;
             commOut += 'z';
-            serialPort1.Write(commOut);
+            serialPortc.writeSerial(commOut);
         }
 
         void printDiag(String text, int data)
         {
             this.tbDiag.Text = text + data;
-
         }
 
         int charToInt(String returned)
@@ -156,9 +132,13 @@ namespace Sparki_Control_App
                 }
                 else
                 {
+                    /*
                     serialPort1.PortName = cbPorts.Text;
                     serialPort1.BaudRate = Convert.ToInt32(cbBaud.Text);
-                    serialPort1.Open();
+                    */
+                    serialPortc.operations(1, cbPorts.Text);
+                    serialPortc.operations(2, cbBaud.Text);
+                    serialPortc.operations(3,"");
                     pbStatus.Value = 100;
                     buClose.Enabled = true;
                     buOpen.Enabled = false;
@@ -173,7 +153,7 @@ namespace Sparki_Control_App
 
         private void buClose_Click(object sender, EventArgs e)
         {
-            serialPort1.Close();
+            serialPortc.operations(4, "");
             pbStatus.Value = 0;
             buOpen.Enabled = true;
             buClose.Enabled = false;
@@ -186,7 +166,7 @@ namespace Sparki_Control_App
 
             try
             {
-                tbDataReceived.Text = serialPort1.ReadLine();
+                tbDataReceived.Text = serialPortc.readBluetooth();
             }
             catch (TimeoutException)
             {
@@ -223,36 +203,36 @@ namespace Sparki_Control_App
                 while (true)
                 {
                     commandCreater("000bll");  //ask Sparki for the left Line sensors data
-                    returned = readBluetooth();  //read the returned value
+                    returned = serialPortc.readBluetooth();  //read the returned value
                     if (returned == "TE")  //check for a transmission error
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else  //if no error convert the character array into an int and report the value for diag
                     {
                         lineLeft = charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Left:  ", lineLeft);
-                        log("bwLineFollower", "\r\n\r\nNew Iteration \r\nLine Left char: " + returned + " int: ", lineLeft);
+                        logger.logWriter("bwLineFollower", "\r\n\r\nNew Iteration \r\nLine Left char: " + returned + " int: ", lineLeft);
                     }
 
                     commandCreater("000blr");  //ask Sparki for the right Line sensors data
-                    returned = readBluetooth();
+                    returned = serialPortc.readBluetooth();
                     if (returned == "TE")
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else
                     {
                         lineRight = charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Right:  " + returned + " int: ", lineRight);
-                        log("bwLineFollower", "\r\nLine Right: " + returned + " int: ", lineRight);
+                        logger.logWriter("bwLineFollower", "\r\nLine Right: " + returned + " int: ", lineRight);
                     }
 
                     commandCreater("000blc");  //ask Sparki for the Center Line sensors data
-                    returned = readBluetooth();
+                    returned = serialPortc.readBluetooth();
                     if (returned == "TE")
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else
                     {
                         lineCenter = charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Center:  " + returned + " int: ", lineCenter);
-                        log("bwLineFollower", "\r\nLine Center: " + returned + " int: ", lineCenter);
+                        logger.logWriter("bwLineFollower", "\r\nLine Center: " + returned + " int: ", lineCenter);
                     }
                     //use the left, center and right data to make a decision about how to adjust to the line.
                     //need to calibrate, 001 may be to small a step, wht happens if the line is visible by both sensors?
@@ -269,7 +249,7 @@ namespace Sparki_Control_App
                         commandCreater("001for");
                     else if (lineRight < threshold && lineCenter < threshold && lineLeft < threshold)
                     {
-                        log("bwLineFollower", "\r\nIntersection found.", 0);
+                        logger.logWriter("bwLineFollower", "\r\nIntersection found.", 0);
                         commandCreater("090rig");
                         if (lineRight > threshold && lineCenter > threshold && lineLeft > threshold)
                             commandCreater("180lef");
