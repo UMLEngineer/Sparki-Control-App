@@ -8,6 +8,18 @@ namespace Sparki_Control_App
 {
     class GeneralCommands
     {
+        public class LineResult
+        {
+            public int lineLeft;
+            public int lineRight;
+            public int lineCenter;
+            public string errorLeft;
+            public string errorRight;
+            public string errorCenter;
+        }
+
+        LineResult lineResult = new LineResult();
+
         LogCreater logger = new LogCreater();
         Serial serialPortc = new Serial();
 
@@ -65,7 +77,40 @@ namespace Sparki_Control_App
             }
             return converted;
         }
+        public LineResult lineValues()
+        {
+            string returned;
+            var result = new LineResult();
 
+            commandCreater("000bll");  //ask Sparki for the left Line sensors data
+            returned = serialPortc.readBluetooth();  //read the returned value
+            if (returned == "TE")  //check for a transmission error
+                result.errorLeft = "Transmission error";
+            else  //if no error convert the character array into an int and report the value for diag
+            {
+                result.lineLeft = charToInt(returned);
+                logger.logWriter("bwLineFollower", "\r\n\r\nNew Iteration \r\nLine Left char: " + returned + " int: ", result.lineLeft);
+            }
+            commandCreater("000blr");  //ask Sparki for the right Line sensors data
+            returned = serialPortc.readBluetooth();
+            if (returned == "TE")
+                result.errorRight = "Transmission error";
+            else
+            {
+                result.lineRight = charToInt(returned);
+                logger.logWriter("bwLineFollower", "\r\nLine Right: " + returned + " int: ", result.lineRight);
+            }
+            commandCreater("000blc");  //ask Sparki for the Center Line sensors data
+            returned = serialPortc.readBluetooth();
+            if (returned == "TE")
+                result.errorCenter = "Transmission error";
+            else
+            {
+                result.lineCenter = charToInt(returned);
+                logger.logWriter("bwLineFollower", "\r\nLine Center: " + returned + " int: ", result.lineCenter);
+            }
+            return result;
+        }
 
     }
 }

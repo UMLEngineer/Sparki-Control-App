@@ -34,7 +34,6 @@
             this.laPort = new System.Windows.Forms.Label();
             this.laBaud = new System.Windows.Forms.Label();
             this.laStatus = new System.Windows.Forms.Label();
-            this.buPing = new System.Windows.Forms.Button();
             this.tbDataReceived = new System.Windows.Forms.TextBox();
             this.buOpen = new System.Windows.Forms.Button();
             this.buClose = new System.Windows.Forms.Button();
@@ -100,16 +99,6 @@
             this.laStatus.TabIndex = 5;
             this.laStatus.Text = "Connected?";
             // 
-            // buPing
-            // 
-            this.buPing.Location = new System.Drawing.Point(15, 120);
-            this.buPing.Name = "buPing";
-            this.buPing.Size = new System.Drawing.Size(75, 23);
-            this.buPing.TabIndex = 6;
-            this.buPing.Text = "Ping Distance";
-            this.buPing.UseVisualStyleBackColor = true;
-            this.buPing.Click += new System.EventHandler(this.buPing_Click);
-            // 
             // tbDataReceived
             // 
             this.tbDataReceived.Location = new System.Drawing.Point(160, 122);
@@ -167,7 +156,7 @@
             // 
             // buDemo
             // 
-            this.buDemo.Location = new System.Drawing.Point(15, 148);
+            this.buDemo.Location = new System.Drawing.Point(12, 122);
             this.buDemo.Name = "buDemo";
             this.buDemo.Size = new System.Drawing.Size(75, 23);
             this.buDemo.TabIndex = 13;
@@ -185,7 +174,7 @@
             // 
             // buLineFollow
             // 
-            this.buLineFollow.Location = new System.Drawing.Point(15, 178);
+            this.buLineFollow.Location = new System.Drawing.Point(12, 152);
             this.buLineFollow.Name = "buLineFollow";
             this.buLineFollow.Size = new System.Drawing.Size(75, 23);
             this.buLineFollow.TabIndex = 14;
@@ -217,7 +206,6 @@
             this.Controls.Add(this.buClose);
             this.Controls.Add(this.buOpen);
             this.Controls.Add(this.tbDataReceived);
-            this.Controls.Add(this.buPing);
             this.Controls.Add(this.laStatus);
             this.Controls.Add(this.laBaud);
             this.Controls.Add(this.laPort);
@@ -240,7 +228,6 @@
         private System.Windows.Forms.Label laPort;
         private System.Windows.Forms.Label laBaud;
         private System.Windows.Forms.Label laStatus;
-        private System.Windows.Forms.Button buPing;
         private System.Windows.Forms.TextBox tbDataReceived;
         private System.Windows.Forms.Button buOpen;
         private System.Windows.Forms.Button buClose;

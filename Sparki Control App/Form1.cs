@@ -10,9 +10,8 @@ using System.Windows.Forms;
 using System.IO.Ports;
 using System.Threading;
 
+//sparki is over turning
 
-//Line follower fails if it reads a value less than 100, this is due to chartoint
-//If sparki records a 92 and sends it back is that 092 or just 92? Probably 92
 namespace Sparki_Control_App
 {
     public partial class Form1 : Form
@@ -39,13 +38,12 @@ namespace Sparki_Control_App
 
         void printDiag(String text, int data)
         {
-            this.tbDiag.Text = text + data;
+            if (data == -111)
+                this.tbDiag.Text = text;
+            else
+                this.tbDiag.Text = text + data;
         }
-
-        
-
-        //Sparki Control Functions
-            
+           
         //GUI elements
 
         private void buLineFollow_Click(object sender, EventArgs e)
@@ -58,10 +56,8 @@ namespace Sparki_Control_App
 
         private void buStop_Click(object sender, EventArgs e)
         {
-            //if (bwLineFollower.WorkerSupportsCancellation == true)
-            //{
-                this.bwLineFollower.CancelAsync();
-            //}
+            bwLineFollower.CancelAsync();
+            this.Invoke(new Action<string, int>(printDiag), "Action stopped by user", -111);
         }
 
         private void tbDiag_TextChanged(object sender, EventArgs e)
@@ -79,17 +75,12 @@ namespace Sparki_Control_App
                 }
                 else
                 {
-                    /*
-                    serialPort1.PortName = cbPorts.Text;
-                    serialPort1.BaudRate = Convert.ToInt32(cbBaud.Text);
-                    */
                     serialPortc.operations(1, cbPorts.Text);
                     serialPortc.operations(2, cbBaud.Text);
                     serialPortc.operations(3,"");
                     pbStatus.Value = 100;
                     buClose.Enabled = true;
                     buOpen.Enabled = false;
-                    buPing.Enabled = true;
                 }
             }
             catch (UnauthorizedAccessException)
@@ -104,26 +95,10 @@ namespace Sparki_Control_App
             pbStatus.Value = 0;
             buOpen.Enabled = true;
             buClose.Enabled = false;
-            buPing.Enabled = false;
-        }
-
-        private void buPing_Click(object sender, EventArgs e)
-        {
-            generalC.commandCreater("000pin");
-
-            try
-            {
-                tbDataReceived.Text = serialPortc.readBluetooth();
-            }
-            catch (TimeoutException)
-            {
-                tbDiag.Text = "TE";
-            }
         }
 
          private void buDemo_Click(object sender, EventArgs e)
         {
-
             generalC.commandCreater("090lef");
             System.Threading.Thread.Sleep(5000);
             generalC.commandCreater("090rig");
@@ -132,13 +107,8 @@ namespace Sparki_Control_App
         //Background Worker for the Line Following system
         private void bwLineFollower_DoWork(object sender, DoWorkEventArgs e)
         {
-
-            int lineLeft = 0;
-            int lineRight = 0;
-            int lineCenter = 0;
             int threshold = 500;  //below this value means the sensor is on the line
             String returned;  //value sent from sparki as a line of characters
-            //char[] returnedc;  //character array of the returned string
 
             if ((bwLineFollower.CancellationPending == true))
             {
@@ -149,60 +119,36 @@ namespace Sparki_Control_App
             {
                 while (true)
                 {
-                    generalC.commandCreater("000bll");  //ask Sparki for the left Line sensors data
-                    returned = serialPortc.readBluetooth();  //read the returned value
-                    if (returned == "TE")  //check for a transmission error
-                        this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
-                    else  //if no error convert the character array into an int and report the value for diag
-                    {
-                        lineLeft = generalC.charToInt(returned);
-                        this.Invoke(new Action<string, int>(printDiag), "Line Left:  ", lineLeft);
-                        logger.logWriter("bwLineFollower", "\r\n\r\nNew Iteration \r\nLine Left char: " + returned + " int: ", lineLeft);
-                    }
-
-                    generalC.commandCreater("000blr");  //ask Sparki for the right Line sensors data
-                    returned = serialPortc.readBluetooth();
-                    if (returned == "TE")
-                        this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
-                    else
-                    {
-                        lineRight = generalC.charToInt(returned);
-                        this.Invoke(new Action<string, int>(printDiag), "Line Right:  " + returned + " int: ", lineRight);
-                        logger.logWriter("bwLineFollower", "\r\nLine Right: " + returned + " int: ", lineRight);
-                    }
-
-                    generalC.commandCreater("000blc");  //ask Sparki for the Center Line sensors data
-                    returned = serialPortc.readBluetooth();
-                    if (returned == "TE")
-                        this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
-                    else
-                    {
-                        lineCenter = generalC.charToInt(returned);
-                        this.Invoke(new Action<string, int>(printDiag), "Line Center:  " + returned + " int: ", lineCenter);
-                        logger.logWriter("bwLineFollower", "\r\nLine Center: " + returned + " int: ", lineCenter);
-                    }
-                    //use the left, center and right data to make a decision about how to adjust to the line.
-                    //need to calibrate, 001 may be to small a step, wht happens if the line is visible by both sensors?
-
-                    if (lineRight < threshold && lineCenter > threshold && lineLeft > threshold)
+                    var result = generalC.lineValues();
+                    if (result.lineRight < threshold && result.lineCenter > threshold && result.lineLeft > threshold)
                         generalC.commandCreater("001rig");
-                    else if (lineLeft < threshold && lineCenter > threshold && lineRight > threshold)
+                    else if (result.lineLeft < threshold && result.lineCenter > threshold && result.lineRight > threshold)
                         generalC.commandCreater("001lef");
-                    else if (lineCenter < threshold && lineLeft > threshold && lineRight > threshold)
+                    else if (result.lineCenter < threshold && result.lineLeft > threshold && result.lineRight > threshold)
+                        generalC.commandCreater("005for");
+                    else if (result.lineLeft < threshold && result.lineCenter < threshold && result.lineRight > threshold)
                         generalC.commandCreater("001for");
-                    else if (lineLeft < threshold && lineCenter < threshold && lineRight > threshold)
+                    else if (result.lineRight < threshold && result.lineCenter < threshold && result.lineLeft > threshold)
                         generalC.commandCreater("001for");
-                    else if (lineRight < threshold && lineCenter < threshold && lineLeft > threshold)
-                        generalC.commandCreater("001for");
-                    else if (lineRight < threshold && lineCenter < threshold && lineLeft < threshold)
+                    else if (result.lineRight < threshold && result.lineCenter < threshold && result.lineLeft < threshold)
                     {
-                        logger.logWriter("bwLineFollower", "\r\nIntersection found.", 0);
+                        logger.logWriter("bwLineFollower", "\r\n\r\nIntersection found.", -111);
                         generalC.commandCreater("090rig");
-                        if (lineRight > threshold && lineCenter > threshold && lineLeft > threshold)
+                        Thread.Sleep(2000);
+                        result = generalC.lineValues();
+                        if (result.lineRight > threshold && result.lineCenter > threshold && result.lineLeft > threshold)
+                        {
                             generalC.commandCreater("180lef");
+                            Thread.Sleep(3000);
+                        }
                     }
-
                     else
+                    {
+                        e.Cancel = true;
+                        this.Invoke(new Action<string, int>(printDiag), "No Line Found", -111);
+                        return;
+                    }
+                    if ((bwLineFollower.CancellationPending == true))
                     {
                         e.Cancel = true;
                         return;
@@ -212,26 +158,16 @@ namespace Sparki_Control_App
         }
 
         private void bwLineFollower_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-
-        }
+        {}
 
         private void bwLineFollower_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if ((e.Cancelled == true))
-            {
-                this.Invoke(new Action<string, int>(printDiag), "No line detected", 0);
-            }
-
+            {}
             else if (!(e.Error == null))
-            {
-                
-            }
-
+            {}
             else
-            {
-                
-            }
+            {}
         }
     }
 }
