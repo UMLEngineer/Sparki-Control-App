@@ -33,69 +33,16 @@ namespace Sparki_Control_App
 
         LogCreater logger = new LogCreater();
         Serial serialPortc = new Serial();
-        
+        GeneralCommands generalC = new GeneralCommands();
+                
         //General Functions
-
-        int checkSumF(char[] arr)
-        {
-            int sum = 0;
-            for (int i = 0; i < 5; i++)
-                sum += arr[i];
-            return sum;
-        }
-
-        void commandCreater(String commOut)
-        {
-            char[] commandArray = new char[9];
-            commandArray = commOut.ToCharArray();
-            int checkSumV = checkSumF(commandArray);
-            commOut += checkSumV;
-            commOut += 'z';
-            serialPortc.writeSerial(commOut);
-        }
 
         void printDiag(String text, int data)
         {
             this.tbDiag.Text = text + data;
         }
 
-        int charToInt(String returned)
-        {
-            char[] returnedc = returned.ToCharArray();
-            int length = returnedc.Length;
-            
-            int converted = 0;
-            int j = 0;
-            int i = 0;
-            int x = 0;
-            switch (length)
-            {
-                case 4:
-                    j = 3;
-                    x = 100;
-                    break;
-                case 3:
-                    j = 2;
-                    x = 10;
-                    break;
-                case 2:
-                    j = 1;
-                    x = 1;
-                    break;
-                default:
-                    logger.logWriter("Diag.txt", "Invalid Char to Int power/r/n", 0);
-                    break;
-            }
-            
-            while (i<j)
-            {
-                converted += x * (returnedc[i] - '0');
-                x /= 10;
-                i++;
-            }
-            return converted;
-
-        }
+        
 
         //Sparki Control Functions
             
@@ -162,7 +109,7 @@ namespace Sparki_Control_App
 
         private void buPing_Click(object sender, EventArgs e)
         {
-            commandCreater("000pin");
+            generalC.commandCreater("000pin");
 
             try
             {
@@ -176,10 +123,10 @@ namespace Sparki_Control_App
 
          private void buDemo_Click(object sender, EventArgs e)
         {
-           
-            commandCreater("090lef");
+
+            generalC.commandCreater("090lef");
             System.Threading.Thread.Sleep(5000);
-            commandCreater("090rig");
+            generalC.commandCreater("090rig");
         }
 
         //Background Worker for the Line Following system
@@ -202,35 +149,35 @@ namespace Sparki_Control_App
             {
                 while (true)
                 {
-                    commandCreater("000bll");  //ask Sparki for the left Line sensors data
+                    generalC.commandCreater("000bll");  //ask Sparki for the left Line sensors data
                     returned = serialPortc.readBluetooth();  //read the returned value
                     if (returned == "TE")  //check for a transmission error
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else  //if no error convert the character array into an int and report the value for diag
                     {
-                        lineLeft = charToInt(returned);
+                        lineLeft = generalC.charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Left:  ", lineLeft);
                         logger.logWriter("bwLineFollower", "\r\n\r\nNew Iteration \r\nLine Left char: " + returned + " int: ", lineLeft);
                     }
 
-                    commandCreater("000blr");  //ask Sparki for the right Line sensors data
+                    generalC.commandCreater("000blr");  //ask Sparki for the right Line sensors data
                     returned = serialPortc.readBluetooth();
                     if (returned == "TE")
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else
                     {
-                        lineRight = charToInt(returned);
+                        lineRight = generalC.charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Right:  " + returned + " int: ", lineRight);
                         logger.logWriter("bwLineFollower", "\r\nLine Right: " + returned + " int: ", lineRight);
                     }
 
-                    commandCreater("000blc");  //ask Sparki for the Center Line sensors data
+                    generalC.commandCreater("000blc");  //ask Sparki for the Center Line sensors data
                     returned = serialPortc.readBluetooth();
                     if (returned == "TE")
                         this.Invoke(new Action<string, int>(printDiag), "Transmission Error", 0);
                     else
                     {
-                        lineCenter = charToInt(returned);
+                        lineCenter = generalC.charToInt(returned);
                         this.Invoke(new Action<string, int>(printDiag), "Line Center:  " + returned + " int: ", lineCenter);
                         logger.logWriter("bwLineFollower", "\r\nLine Center: " + returned + " int: ", lineCenter);
                     }
@@ -238,21 +185,21 @@ namespace Sparki_Control_App
                     //need to calibrate, 001 may be to small a step, wht happens if the line is visible by both sensors?
 
                     if (lineRight < threshold && lineCenter > threshold && lineLeft > threshold)
-                        commandCreater("001rig");
+                        generalC.commandCreater("001rig");
                     else if (lineLeft < threshold && lineCenter > threshold && lineRight > threshold)
-                        commandCreater("001lef");
+                        generalC.commandCreater("001lef");
                     else if (lineCenter < threshold && lineLeft > threshold && lineRight > threshold)
-                        commandCreater("001for");
+                        generalC.commandCreater("001for");
                     else if (lineLeft < threshold && lineCenter < threshold && lineRight > threshold)
-                        commandCreater("001for");
+                        generalC.commandCreater("001for");
                     else if (lineRight < threshold && lineCenter < threshold && lineLeft > threshold)
-                        commandCreater("001for");
+                        generalC.commandCreater("001for");
                     else if (lineRight < threshold && lineCenter < threshold && lineLeft < threshold)
                     {
                         logger.logWriter("bwLineFollower", "\r\nIntersection found.", 0);
-                        commandCreater("090rig");
+                        generalC.commandCreater("090rig");
                         if (lineRight > threshold && lineCenter > threshold && lineLeft > threshold)
-                            commandCreater("180lef");
+                            generalC.commandCreater("180lef");
                     }
 
                     else
